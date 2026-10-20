@@ -596,11 +596,23 @@ footer{
 .foot-col ul{list-style:none;display:grid;gap:9px}
 .foot-col a{color:var(--muted);font-size:.94rem;transition:color .25s}
 .foot-col a:hover{color:var(--gold-l)}
+
+/* Обновлённый блок с копирайтом */
 .foot-bottom{
   max-width:1140px;margin:40px auto 0;padding-top:22px;
   border-top:1px solid rgba(217,169,74,.12);
-  display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;
+  display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center;
   color:var(--muted);font-size:.84rem;
+}
+.copyright-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+@media(max-width: 768px) {
+  .copyright-info { text-align: center; }
+  .foot-bottom { justify-content: center; }
 }
 
 /* ============ ДОСТУПНОСТЬ ============ */
@@ -1231,8 +1243,13 @@ footer{
     </div>
   </div>
 
+  <!-- Обновлённый блок с юридической информацией -->
   <div class="foot-bottom">
-    <span>© Заветы и забавы. Все права защищены.</span>
+    <div class="copyright-info">
+      <span>© Общество с ограниченной ответственностью "ДЕЯ". ИНН организации: 1684028571.</span>
+      <span>© Учредитель и генеральный директор Овчинников Андрей Александрович.</span>
+      <span>© 2026 Проект «Заветы и забавы». Все права защищены.</span>
+    </div>
     <span>Сделано с любовью к Древней Руси ◆</span>
   </div>
 </footer>
