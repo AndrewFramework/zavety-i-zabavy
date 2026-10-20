@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Заветы и забавы — сюжетная 2D-игра о Древней Руси</title>
+<meta name="description" content="«Заветы и забавы» — 2D-игра в стиле древнерусского эпоса: нарратив, кастомизация героя и мини-игры по мотивам народных забав. Android 8+, RuStore.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ruslan+Display&family=Cormorant:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Marck+Script&display=swap" rel="stylesheet">
+<style>
+/* ============ БАЗА ============ */
+:root{
+  --bg:#150c08;
+  --bg-2:#1e110a;
+  --panel:#241509;
+  --gold:#d9a94a;
+  --gold-l:#f2d896;
+  --gold-d:#a8721f;
+  --red:#b23a2e;
+  --red-l:#e0705c;
+  --green:#5c8a4f;
+  --green-l:#9cc48f;
+  --cream:#f3e6cb;
+  --muted:#c9b79c;
+  --line:rgba(217,169,74,.22);
+  --shadow:0 24px 60px rgba(0,0,0,.55);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Cormorant',Georgia,serif;
+  font-size:18px;
+  line-height:1.65;
+  color:var(--cream);
+  background:
+    radial-gradient(1200px 800px at 50% -10%, rgba(158,43,37,.20), transparent 62%),
+    radial-gradient(900px 700px at 92% 18%, rgba(217,169,74,.09), transparent 60%),
+    radial-gradient(900px 700px at 5% 60%, rgba(92,138,79,.07), transparent 60%),
+    var(--bg);
+  overflow-x:hidden;
+}
+/* орнаментальная текстура */
+body::before{
+  content:'';
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 90 90'%3E%3Cg fill='none' stroke='%23d9a94a' stroke-width='1'%3E%3Cpath d='M45 5L85 45L45 85L5 45Z'/%3E%3Cpath d='M45 25L65 45L45 65L25 45Z'/%3E%3C/g%3E%3Ccircle cx='45' cy='45' r='2' fill='%23d9a94a'/%3E%3C/svg%3E");
+  background-size:90px 90px;
+  opacity:.045;
+}
+img,svg{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+
+/* ============ ПРОГРЕСС + НАВИГАЦИЯ ============ */
+.progress{position:fixed;top:0;left:0;width:100%;height:3px;z-index:120}
+.progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold-d),var(--gold-l));box-shadow:0 0 14px rgba(217,169,74,.8)}
+
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;gap:20px;
+  padding:20px clamp(18px,5vw,56px);
+  transition:background .35s, padding .35s, border-color .35s;
+  border-bottom:1px solid transparent;
+}
+.nav.scrolled{
+  background:rgba(19,11,7,.86);
+  -webkit-backdrop-filter:blur(14px);
+  backdrop-filter:blur(14px);
+  border-bottom-color:var(--line);
+  padding-top:12px;padding-bottom:12px;
+}
+.logo{
+  font-family:'Ruslan Display',serif;
+  font-size:1.15rem;
+  letter-spacing:.06em;
+  color:var(--gold-l);
+  display:flex;align-items:center;gap:10px;
+  white-space:nowrap;
+}
+.logo::before{
+  content:'';width:12px;height:12px;flex:0 0 auto;
+  background:linear-gradient(135deg,var(--gold-l),var(--gold-d));
+  transform:rotate(45deg);
+  box-shadow:0 0 14px rgba(217,169,74,.7);
+}
+.nav ul{display:flex;gap:clamp(14px,2.2vw,30px);list-style:none}
+.nav a{
+  font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600;
+  color:var(--muted);transition:color .25s;position:relative;
+}
+.nav a::after{
+  content:'';position:absolute;left:0;bottom:-6px;height:1px;width:0;
+  background:var(--gold);transition:width .3s;
+}
+.nav a:hover{color:var(--gold-l)}
+.nav a:hover::after{width:100%}
+@media(max-width:900px){.nav ul{display:none}}
+
+/* ============ ОБЩИЕ БЛОКИ ============ */
+.container{max-width:1140px;margin:0 auto;position:relative;z-index:1}
+section{position:relative;z-index:1;padding:clamp(64px,9vw,120px) clamp(18px,5vw,40px)}
+.section-head{text-align:center;max-width:760px;margin:0 auto 60px}
+.section-title{
+  font-family:'Ruslan Display',serif;
+  font-size:clamp(1.8rem,4.4vw,3.2rem);
+  line-height:1.15;
+  color:var(--gold-l);
+  letter-spacing:.02em;
+}
+.section-sub{color:var(--muted);margin-top:16px;font-size:1.08rem}
+.ornament{
+  display:flex;align-items:center;justify-content:center;gap:16px;
+  color:var(--gold);margin:20px 0 26px;font-size:.85rem;
+}
+.ornament::before,.ornament::after{
+  content:'';height:1px;width:min(130px,22vw);
+  background:linear-gradient(90deg,transparent,var(--gold));
+}
+.ornament::after{background:linear-gradient(90deg,var(--gold),transparent)}
+
+/* появление при скролле */
+.reveal{opacity:0;transform:translateY(34px);transition:opacity .85s cubic-bezier(.2,.7,.3,1),transform .85s cubic-bezier(.2,.7,.3,1)}
+.reveal.visible{opacity:1;transform:none}
+
+/* ============ HERO ============ */
+.hero{
+  position:relative;z-index:1;
+  min-height:100svh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;
+  padding:130px clamp(18px,5vw,40px) 90px;
+  overflow:hidden;
+}
+.hero-sun{
+  position:absolute;top:46%;left:50%;
+  width:min(760px,96vw);aspect-ratio:1;border-radius:50%;
+  background:repeating-conic-gradient(from 0deg, rgba(217,169,74,.13) 0deg 1.6deg, transparent 1.6deg 11deg);
+  -webkit-mask:radial-gradient(circle, transparent 36%, #000 39%, #000 63%, transparent 66%);
+  mask:radial-gradient(circle, transparent 36%, #000 39%, #000 63%, transparent 66%);
+  transform:translate(-50%,-50%);
+  animation:spin 140s linear infinite;
+  pointer-events:none;
+  z-index:-1;
+}
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+.hero::after{
+  content:'';position:absolute;top:-30%;left:50%;transform:translateX(-50%);
+  width:1100px;height:1100px;border-radius:50%;
+  background:radial-gradient(circle, rgba(217,169,74,.16), rgba(158,43,37,.07) 42%, transparent 66%);
+  pointer-events:none;z-index:-1;
+}
+.eyebrow{
+  font-size:.78rem;letter-spacing:.34em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:22px;font-weight:600;
+}
+.hero h1{
+  font-family:'Ruslan Display',serif;
+  font-size:clamp(2.4rem,9vw,6.6rem);
+  line-height:.98;
+  background:linear-gradient(180deg,#fbeec4 0%,#e8c86a 42%,#b57f26 78%,#8a5c14 100%);
+  -webkit-background-clip:text;background-clip:text;
+  color:transparent;
+  filter:drop-shadow(0 0 46px rgba(217,169,74,.28));
+  margin-bottom:26px;
+}
+.hero .lead{
+  max-width:660px;font-size:clamp(1.02rem,2.3vw,1.32rem);
+  color:var(--cream);opacity:.94;
+}
+.hero .lead b{color:var(--gold-l);font-weight:700}
+.badges{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:34px 0 38px}
+.badge{
+  padding:7px 16px;border-radius:999px;
+  border:1px solid var(--line);
+  background:rgba(36,21,9,.55);
+  font-size:.78rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;
+}
+.cta{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  padding:15px 34px;border-radius:999px;
+  font-family:'Cormorant',serif;font-weight:700;
+  font-size:.88rem;letter-spacing:.12em;text-transform:uppercase;
+  transition:transform .3s, box-shadow .3s, background .3s, border-color .3s;
+  cursor:pointer;border:1px solid transparent;
+}
+.btn-primary{
+  background:linear-gradient(135deg,#f0d38a,#d9a94a 45%,#a8721f);
+  color:#1a0f08;
+  box-shadow:0 10px 34px rgba(217,169,74,.32);
+}
+.btn-primary:hover{transform:translateY(-3px);box-shadow:0 16px 46px rgba(217,169,74,.5)}
+.btn-ghost{border-color:rgba(217,169,74,.42);color:var(--gold-l)}
+.btn-ghost:hover{background:rgba(217,169,74,.12);border-color:var(--gold);transform:translateY(-3px)}
+
+.scroll-hint{
+  position:absolute;bottom:26px;left:50%;transform:translateX(-50%);
+  color:var(--gold);opacity:.7;font-size:.72rem;letter-spacing:.3em;text-transform:uppercase;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+}
+.scroll-hint::after{
+  content:'';width:1px;height:34px;
+  background:linear-gradient(180deg,var(--gold),transparent);
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:.3;transform:scaleY(.6)}50%{opacity:1;transform:scaleY(1)}}
+
+/* ============ КАРТОЧКИ ============ */
+.card{
+  position:relative;
+  background:linear-gradient(160deg, rgba(48,28,17,.92), rgba(24,14,9,.94));
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:32px 28px;
+  box-shadow:var(--shadow);
+  transition:transform .35s, border-color .35s, box-shadow .35s;
+  overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  opacity:.55;
+}
+.card:hover{transform:translateY(-6px);border-color:rgba(217,169,74,.45);box-shadow:0 30px 70px rgba(0,0,0,.65)}
+
+/* ============ НАЗНАЧЕНИЕ ============ */
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
+.purpose h3{
+  font-family:'Ruslan Display',serif;font-size:1.35rem;color:var(--gold-l);
+  margin:18px 0 10px;
+}
+.purpose p{color:var(--muted);font-size:1rem}
+.icon-circle{
+  width:56px;height:56px;border-radius:50%;
+  display:grid;place-items:center;
+  background:radial-gradient(circle at 30% 25%, rgba(242,216,150,.22), rgba(217,169,74,.06));
+  border:1px solid var(--line);
+  color:var(--gold);
+}
+.icon-circle svg{width:26px;height:26px}
+
+/* ============ ПУТЬ ============ */
+.path{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px;align-items:stretch}
+.step{
+  position:relative;text-align:center;padding:36px 24px;
+  border:1px dashed rgba(217,169,74,.28);
+  border-radius:16px;
+  background:rgba(30,17,10,.5);
+  transition:background .3s, border-color .3s;
+}
+.step:hover{background:rgba(45,26,14,.7);border-color:rgba(217,169,74,.5)}
+.step-num{
+  font-family:'Ruslan Display',serif;font-size:.95rem;letter-spacing:.25em;
+  color:var(--gold);opacity:.85;margin-bottom:14px;
+}
+.step h3{font-family:'Ruslan Display',serif;font-size:1.5rem;color:var(--cream);margin-bottom:10px}
+.step p{color:var(--muted);font-size:.98rem}
+.step-arrow{display:none}
+@media(min-width:900px){
+  .path{grid-template-columns:1fr auto 1fr auto 1fr}
+  .step-arrow{display:grid;place-items:center;color:var(--gold);font-size:1.6rem;opacity:.6}
+}
+
+/* ============ ГЛАВЫ ============ */
+.chapter{
+  display:grid;grid-template-columns:118px 1fr;gap:32px;
+  padding:38px 34px;
+  border-radius:22px;
+  border:1px solid var(--line);
+  background:linear-gradient(150deg, rgba(46,27,16,.94), rgba(22,13,8,.96));
+  box-shadow:var(--shadow);
+  margin-bottom:30px;
+  position:relative;
+  overflow:hidden;
+  transition:border-color .35s, transform .35s;
+}
+.chapter:hover{transform:translateY(-4px)}
+.chapter::after{
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:220px;height:220px;border-radius:50%;
+  opacity:.16;pointer-events:none;
+}
+.ch1::after{background:radial-gradient(circle,var(--gold),transparent 70%)}
+.ch2::after{background:radial-gradient(circle,var(--red),transparent 70%)}
+.ch3::after{background:radial-gradient(circle,var(--green),transparent 70%)}
+.ch1:hover{border-color:rgba(217,169,74,.5)}
+.ch2:hover{border-color:rgba(178,58,46,.6)}
+.ch3:hover{border-color:rgba(92,138,79,.6)}
+
+.chapter-num{
+  width:118px;height:118px;border-radius:50%;
+  display:grid;place-items:center;
+  font-family:'Ruslan Display',serif;font-size:2.7rem;
+  color:#1a0f08;
+  align-self:start;
+  box-shadow:0 0 0 1px rgba(217,169,74,.35), 0 0 46px rgba(217,169,74,.22);
+}
+.ch1 .chapter-num{background:radial-gradient(circle at 30% 24%, #fbeec4, #d9a94a 55%, #a8721f)}
+.ch2 .chapter-num{background:radial-gradient(circle at 30% 24%, #f4b3a6, #c94a3a 55%, #8b1e1e);box-shadow:0 0 0 1px rgba(201,74,58,.4),0 0 46px rgba(178,58,46,.3)}
+.ch3 .chapter-num{background:radial-gradient(circle at 30% 24%, #c3e0b8, #5c8a4f 55%, #2f4a28);box-shadow:0 0 0 1px rgba(92,138,79,.45),0 0 46px rgba(92,138,79,.3)}
+
+.chapter-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:14px}
+.chapter-head h3{
+  font-family:'Ruslan Display',serif;
+  font-size:clamp(1.5rem,3.4vw,2.1rem);
+  color:var(--gold-l);
+}
+.ch2 .chapter-head h3{color:#f0b3a6}
+.ch3 .chapter-head h3{color:#b9dcae}
+.tag{
+  font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;font-weight:700;
+  padding:5px 13px;border-radius:999px;
+  border:1px solid var(--line);color:var(--muted);
+  background:rgba(255,255,255,.03);
+}
+.chapter-sub{color:var(--muted);font-style:italic;margin-top:6px;font-size:1.05rem}
+
+.meta{display:grid;gap:16px;margin:26px 0 24px}
+.meta-row .lbl{
+  display:block;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;
+  font-weight:700;color:var(--gold);margin-bottom:4px;
+}
+.meta-row p{color:var(--muted);font-size:1.02rem}
+.meta-row em{color:var(--cream);font-style:italic}
+
+.chapter blockquote{
+  border-left:3px solid var(--gold);
+  padding:6px 0 6px 20px;
+  font-family:'Marck Script',cursive;
+  font-size:clamp(1.2rem,2.6vw,1.5rem);
+  line-height:1.45;
+  color:var(--gold-l);
+}
+.ch2 blockquote{border-left-color:var(--red);color:#f0b3a6}
+.ch3 blockquote{border-left-color:var(--green);color:#b9dcae}
+.chapter cite{
+  display:block;font-family:'Cormorant',serif;font-style:normal;
+  font-size:.82rem;letter-spacing:.1em;color:var(--muted);margin-top:8px;text-transform:uppercase;
+}
+
+@media(max-width:720px){
+  .chapter{grid-template-columns:1fr;gap:20px;padding:28px 22px}
+  .chapter-num{width:82px;height:82px;font-size:1.9rem}
+}
+
+/* ============ ПЕРГАМЕНТ ============ */
+.parchment{
+  position:relative;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(120,80,40,.16), transparent 55%),
+    radial-gradient(circle at 82% 92%, rgba(120,80,40,.18), transparent 55%),
+    linear-gradient(160deg,#f6ecd4 0%,#ecdcb4 45%,#dfc994 100%);
+  color:#3a2412;
+  border-radius:18px;
+  padding:clamp(32px,5vw,56px);
+  box-shadow:inset 0 0 70px rgba(120,80,40,.35), 0 26px 70px rgba(0,0,0,.6);
+  border:1px solid rgba(120,80,40,.35);
+}
+.parchment::before,.parchment::after{
+  content:'';position:absolute;left:14px;right:14px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(90,55,20,.5),transparent);
+}
+.parchment::before{top:14px}
+.parchment::after{bottom:14px}
+.parchment h3{
+  font-family:'Ruslan Display',serif;font-size:1.5rem;color:#6b3d14;
+  text-align:center;margin-bottom:8px;
+}
+.parchment .p-note{
+  text-align:center;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;
+  color:#8a5a2a;margin-bottom:28px;font-weight:700;
+}
+.quote-list{display:grid;gap:22px}
+.quote{
+  font-family:'Marck Script',cursive;
+  font-size:clamp(1.25rem,2.8vw,1.6rem);
+  line-height:1.45;
+  text-align:center;
+  color:#4a2c12;
+}
+.quote small{
+  display:block;font-family:'Cormorant',serif;font-style:normal;
+  font-size:.82rem;letter-spacing:.12em;text-transform:uppercase;
+  color:#8a5a2a;margin-top:10px;font-weight:700;
+}
+.quote-sep{
+  height:1px;width:min(220px,50%);margin:0 auto;
+  background:linear-gradient(90deg,transparent,rgba(90,55,20,.45),transparent);
+}
+.book-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-top:38px}
+.book-feature{
+  background:rgba(255,255,255,.28);
+  border:1px solid rgba(120,80,40,.28);
+  border-radius:12px;padding:18px 20px;
+}
+.book-feature h4{
+  font-family:'Cormorant',serif;font-weight:700;font-size:1rem;
+  color:#6b3d14;margin-bottom:6px;letter-spacing:.03em;
+}
+.book-feature p{font-size:.94rem;color:#5a3a1c;line-height:1.5}
+
+/* ============ ГЕРОЙ ============ */
+.duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px;margin-top:8px}
+.duo-card{
+  text-align:center;padding:38px 26px;border-radius:16px;
+  border:1px solid var(--line);
+  background:linear-gradient(165deg, rgba(46,27,16,.9), rgba(22,13,8,.94));
+  transition:transform .35s, border-color .35s;
+}
+.duo-card:hover{transform:translateY(-6px);border-color:rgba(217,169,74,.5)}
+.duo-rune{
+  font-size:2.4rem;line-height:1;color:var(--gold);
+  text-shadow:0 0 34px rgba(217,169,74,.55);
+  margin-bottom:16px;
+}
+.duo-card h4{font-family:'Ruslan Display',serif;font-size:1.35rem;color:var(--gold-l);margin-bottom:8px}
+.duo-card p{color:var(--muted);font-size:.96rem}
+
+.feature-list{list-style:none;display:grid;gap:14px;margin-top:26px}
+.feature-list li{
+  display:flex;gap:14px;align-items:flex-start;
+  color:var(--muted);font-size:1.02rem;
+}
+.feature-list li::before{
+  content:'';flex:0 0 auto;width:9px;height:9px;margin-top:9px;
+  background:linear-gradient(135deg,var(--gold-l),var(--gold-d));
+  transform:rotate(45deg);
+  box-shadow:0 0 12px rgba(217,169,74,.6);
+}
+.feature-list b{color:var(--cream)}
+
+.two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:44px;align-items:center}
+
+/* ============ ЭПОС ============ */
+.epos{
+  text-align:center;
+  font-family:'Marck Script',cursive;
+  font-size:clamp(1.25rem,2.9vw,1.7rem);
+  line-height:1.75;
+  color:#4a2c12;
+}
+.epos span{display:block}
+.epos .hl{color:#8b1e1e}
+.epos .last{margin-top:22px;font-size:1.1em;color:#6b3d14}
+
+/* ============ СВЕДЕНИЯ О ВИДЕОИГРЕ ============ */
+.passport{
+  display:flex;flex-wrap:wrap;gap:0;
+  border:1px solid var(--line);border-radius:16px;
+  background:linear-gradient(150deg, rgba(48,28,17,.9), rgba(24,14,9,.94));
+  overflow:hidden;margin-bottom:30px;
+  box-shadow:var(--shadow);
+}
+.passport-item{
+  flex:1 1 180px;padding:20px 24px;
+  border-right:1px solid var(--line);
+}
+.passport-item:last-child{border-right:none}
+.passport-item .k{
+  font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--gold);font-weight:700;display:block;margin-bottom:4px;
+}
+.passport-item .v{font-size:1rem;color:var(--cream);font-weight:600;line-height:1.3}
+@media(max-width:700px){
+  .passport-item{flex:1 1 100%;border-right:none;border-bottom:1px solid var(--line)}
+  .passport-item:last-child{border-bottom:none}
+}
+
+.spec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+.spec{
+  position:relative;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:22px 22px 22px 24px;
+  background:linear-gradient(160deg, rgba(44,26,15,.9), rgba(22,13,8,.94));
+  transition:border-color .3s, transform .3s;
+}
+.spec:hover{border-color:rgba(217,169,74,.45);transform:translateY(-3px)}
+.spec-num{
+  font-family:'Ruslan Display',serif;
+  font-size:.78rem;letter-spacing:.18em;color:var(--gold);
+  display:inline-block;margin-bottom:8px;
+  padding:3px 10px;border:1px solid rgba(217,169,74,.35);border-radius:999px;
+}
+.spec h4{
+  font-family:'Cormorant',serif;font-weight:700;font-size:1.06rem;
+  color:var(--cream);margin-bottom:6px;letter-spacing:.01em;
+}
+.spec p{font-size:.94rem;color:var(--muted);line-height:1.55}
+.spec p b{color:var(--cream)}
+
+/* ============ МОНЕТИЗАЦИЯ ============ */
+.money .card h3{
+  font-family:'Ruslan Display',serif;font-size:1.25rem;color:var(--gold-l);
+  margin:16px 0 10px;
+}
+.money .card ul{list-style:none;display:grid;gap:8px;margin-top:6px}
+.money .card li{
+  color:var(--muted);font-size:.96rem;padding-left:18px;position:relative;
+}
+.money .card li::before{
+  content:'◆';position:absolute;left:0;top:0;font-size:.6rem;color:var(--gold);line-height:1.9;
+}
+
+/* ============ ФИНАЛЬНЫЙ CTA ============ */
+.final{
+  text-align:center;
+  border-radius:26px;
+  padding:clamp(44px,7vw,80px) clamp(22px,5vw,56px);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(217,169,74,.18), transparent 60%),
+    linear-gradient(160deg, rgba(46,27,16,.95), rgba(20,12,7,.98));
+  border:1px solid rgba(217,169,74,.35);
+  box-shadow:var(--shadow);
+  position:relative;
+  overflow:hidden;
+}
+.final h2{
+  font-family:'Ruslan Display',serif;
+  font-size:clamp(1.7rem,4.6vw,3rem);
+  line-height:1.2;
+  background:linear-gradient(180deg,#fbeec4,#d9a94a 60%,#a8721f);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 34px rgba(217,169,74,.25));
+  margin-bottom:20px;
+}
+.final p{color:var(--muted);max-width:640px;margin:0 auto 34px;font-size:1.08rem}
+
+/* ============ ПОДДЕРЖКА / ПАРТНЁРЫ ============ */
+.support-card{
+  text-align:center;
+  border:1px solid rgba(217,169,74,.28);
+  border-radius:22px;
+  padding:clamp(28px,4vw,48px);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(217,169,74,.10), transparent 60%),
+    linear-gradient(160deg, rgba(34,20,12,.95), rgba(18,10,6,.98));
+  box-shadow:var(--shadow);
+}
+.support-label{
+  font-size:.72rem;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--gold);font-weight:700;margin-bottom:26px;
+}
+.partners{
+  display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:32px;margin-bottom:28px;
+}
+.partner{
+  display:block;
+  border-radius:8px;
+  transition:transform .3s, box-shadow .3s, filter .3s;
+  width: 280px;
+  max-width: 100%;
+  text-decoration: none;
+}
+.partner:hover{
+  transform:translateY(-4px);
+  filter: drop-shadow(0 8px 20px rgba(0,0,0,.4));
+}
+.partner img{
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+}
+/* Возвращаем белый фон для логотипа Фонда */
+.partner img.logo-fond {
+  background-color: #ffffff;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.support-text{
+  max-width:840px;margin:0 auto;font-size:.9rem;line-height:1.6;color:var(--muted);
+  padding-top:24px;border-top:1px solid rgba(217,169,74,.14);
+}
+
+/* ============ ФУТЕР ============ */
+footer{
+  position:relative;z-index:1;
+  border-top:1px solid var(--line);
+  padding:52px clamp(18px,5vw,40px) 40px;
+  background:rgba(12,7,4,.6);
+}
+.foot-inner{
+  max-width:1140px;margin:0 auto;
+  display:flex;flex-wrap:wrap;gap:32px;justify-content:space-between;align-items:flex-start;
+}
+.foot-brand{max-width:340px}
+.foot-brand .logo{margin-bottom:14px}
+.foot-brand p{color:var(--muted);font-size:.92rem;line-height:1.6}
+.foot-links{display:flex;flex-wrap:wrap;gap:44px}
+.foot-col h5{
+  font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:14px;font-weight:700;
+}
+.foot-col ul{list-style:none;display:grid;gap:9px}
+.foot-col a{color:var(--muted);font-size:.94rem;transition:color .25s}
+.foot-col a:hover{color:var(--gold-l)}
+.foot-bottom{
+  max-width:1140px;margin:40px auto 0;padding-top:22px;
+  border-top:1px solid rgba(217,169,74,.12);
+  display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;
+  color:var(--muted);font-size:.84rem;
+}
+
+/* ============ ДОСТУПНОСТЬ ============ */
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .reveal{opacity:1;transform:none}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- прогресс -->
+<div class="progress"><span id="bar"></span></div>
+
+<!-- навигация -->
+<nav class="nav" id="nav">
+  <a href="#top" class="logo">Заветы и забавы</a>
+  <ul>
+    <li><a href="#about">О игре</a></li>
+    <li><a href="#spec">Сведения</a></li>
+    <li><a href="#path">Путь</a></li>
+    <li><a href="#chapters">Главы</a></li>
+    <li><a href="#book">Книга Заветов</a></li>
+    <li><a href="#hero">Герой</a></li>
+  </ul>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero" id="top">
+  <div class="hero-sun"></div>
+  <p class="eyebrow reveal">Сюжетная 2D-игра · Древняя Русь</p>
+  <h1 class="reveal">Заветы<br>и забавы</h1>
+  <div class="ornament reveal">◆</div>
+  <p class="lead reveal">
+    <b>Жизненная задача → Игра → Мудрость.</b> Стань отроком-советником при князе,
+    пройди три ступени инициации, собери Книгу Заветов и убереги мир от тьмы.
+  </p>
+
+  <div class="badges reveal">
+    <span class="badge">Android 8+</span>
+    <span class="badge">RuStore</span>
+    <span class="badge">Unity · 2D</span>
+    <span class="badge">60 FPS</span>
+  </div>
+
+  <div class="cta reveal">
+    <a href="#chapters" class="btn btn-primary">Пройти три главы</a>
+    <a href="#spec" class="btn btn-ghost">Сведения о игре</a>
+  </div>
+
+  <div class="scroll-hint">Листай</div>
+</header>
+
+<!-- ============ О ИГРЕ ============ -->
+<section id="about">
+  <div class="container">
+    <div class="section-head reveal">
+      <h2 class="section-title">Игра, что говорит языком эпоса</h2>
+      <div class="ornament">◆</div>
+      <p class="section-sub">
+        «Заветы и забавы» — нарратив, кастомизация героя и мини-игры на основе древнерусских
+        народных забав в едином визуальном стиле «оживших лубков», фресок и резной бересты.
+      </p>
+    </div>
+
+    <div class="grid-3">
+      <article class="card purpose reveal">
+        <div class="icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6"/>
+          </svg>
+        </div>
+        <h3>Игрокам</h3>
+        <p>Развлекательный и образовательный контент: история Древней Руси, прожитая через игру, а не через нотации.</p>
+      </article>
+
+      <article class="card purpose reveal">
+        <div class="icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12h4l2.5-6 4 13 2.5-7H21"/>
+          </svg>
+        </div>
+        <h3>Партнёрам</h3>
+        <p>Монетизация через рекламу, донаты, премиум-подписку, компьютерные клубы и партнёрские программы.</p>
+      </article>
+
+      <article class="card purpose reveal">
+        <div class="icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 4 2.5 8.5 12 13l9.5-4.5L12 4Z"/><path d="M6.5 10.5v5c0 1.7 2.5 3 5.5 3s5.5-1.3 5.5-3v-5"/>
+          </svg>
+        </div>
+        <h3>Образованию</h3>
+        <p>Исторический материал, встроенный в игровой процесс, — для вовлечения учащихся в воспитательный процесс.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ СВЕДЕНИЯ О ВИДЕОИГРЕ ============ -->
+<section id="spec">
+  <div class="container">
+    <div class="section-head reveal">
+      <h2 class="section-title">Сведения о видеоигре</h2>
+      <div class="ornament">◆</div>
+      <p class="section-sub">«Заветы и забавы» — подробно и структурно, по пунктам.</p>
+    </div>
+
+    <!-- паспорт игры -->
+    <div class="passport reveal">
+      <div class="passport-item">
+        <span class="k">Название</span>
+        <span class="v">Заветы и забавы</span>
+      </div>
+      <div class="passport-item">
+        <span class="k">Жанр</span>
+        <span class="v">2D-эпос · казуальная</span>
+      </div>
+      <div class="passport-item">
+        <span class="k">Платформа</span>
+        <span class="v">Android 8.0+</span>
+      </div>
+      <div class="passport-item">
+        <span class="k">Магазин</span>
+        <span class="v">RuStore</span>
+      </div>
+      <div class="passport-item">
+        <span class="k">Движок</span>
+        <span class="v">Unity 2D</span>
+      </div>
+    </div>
+
+    <!-- пункты -->
+    <div class="spec-grid">
+      <article class="spec reveal">
+        <span class="spec-num">01</span>
+        <h4>Название видеоигры</h4>
+        <p>«Заветы и забавы».</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">02</span>
+        <h4>Жанр</h4>
+        <p>2D-игра в стиле древнерусского эпоса, сочетающая нарратив, кастомизацию персонажа и мини-игры на основе древнерусских народных забав.</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">03</span>
+        <h4>Платформа и распространение</h4>
+        <p>Android 8.0 и выше. Распространение — через магазин <b>RuStore</b>.</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">04</span>
+        <h4>Основания для разработки</h4>
+        <p>Популяризация историко-культурного наследия Древней Руси через игровые механизмы; востребованность казуальных игр с образовательным компонентом; необходимость отечественного продукта для российской аудитории и интеграции с локальными сервисами (RuStore, Яндекс Телемост).</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">05</span>
+        <h4>Назначение</h4>
+        <p>Частным пользователям — развлекательный и образовательный контент; коммерческим партнёрам — монетизация через рекламу, донаты, премиум-подписку, компьютерные клубы и партнёрские программы; учреждениям дополнительного образования — исторический материал для вовлечения учащихся в воспитательный процесс.</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">06</span>
+        <h4>Главная механика</h4>
+        <p>Принцип <b>«Жизненная задача → Игра → Мудрость»</b>: игрок — отрок-советник; князь, старейшины или жители села приходят с проблемой; решение находится через древнюю забаву; усваивается завет из исторических источников (<em>Поучения В. Мономаха, Русская Правда, Слово о Законе и Благодати</em>).</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">07</span>
+        <h4>Создание и кастомизация персонажа</h4>
+        <p>Выбор пола (добрый молодец / красна девица); настройка внешности — телосложение, причёска, одежда из «сундука».</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">08</span>
+        <h4>Игровые режимы</h4>
+        <p>Три Главы (уровня сложности): <b>«Горелки»</b> (Инициация Души), <b>«Лапта»</b> (Инициация Закона), <b>«Медвежья потеха»</b> (Инициация Духа).</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">09</span>
+        <h4>Глава 1 — «Горелки»</h4>
+        <p>Бег по кругу с уклонением от «воды» (тьмы и соблазнов); финал — воссоединение разделённых пар. Завет: «В дому своем не ленитесь, но за всем смотрите…».</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">10</span>
+        <h4>Глава 2 — «Лапта»</h4>
+        <p>Отбивание «воскового мяча» и автобег на другую сторону поля; метафоры закона, защиты слабых и милосердия. Завет: «Всего же более убогих не забывайте…».</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">11</span>
+        <h4>Глава 3 — «Медвежья потеха»</h4>
+        <p>Файтинг для молодца или стелс для девицы; метафоры гордыни, слова и мудрости. Завет: «Не в худой и неведомой земле владычествовали…».</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">12</span>
+        <h4>Система монетизации</h4>
+        <p>Внутриигровая валюта, донаты, премиум-подписка; реклама с вознаграждением за просмотр; партнёрские предложения (консультации историков, образовательные курсы).</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">13</span>
+        <h4>Пользовательский интерфейс</h4>
+        <p>Экран выбора персонажа; меню кастомизации; игровые HUD-элементы; <b>«Книга Заветов»</b> (словарь мудрости) в виде древнего фолианта / берестяного свитка; послемиссионные опросы.</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">14</span>
+        <h4>Сценарий и сюжет</h4>
+        <p>Выбор пола; экран ввода имени и email (бонус 1000 монет за подтверждение); выбор телосложения, причёски, одежды из «сундука». Цель — пройти 3 ступени инициации, обрести мудрость, пару и спасти мир от «тьмы». Вводный эпос.</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">15</span>
+        <h4>Движок и архитектура</h4>
+        <p>Unity (Universal 2D); 2D-физический движок Box2D; анимация через Spine 2D или покадровую спрайтовую анимацию.</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">16</span>
+        <h4>Графика</h4>
+        <p>2D, растровые спрайты; стиль «оживших лубков», фресок, резной бересты, деревянной игрушки, миниатюр Лицевого летописного свода. Адаптив под разрешения 18:9 и 19.5:9.</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">17</span>
+        <h4>Звук</h4>
+        <p>Славянский фолк (знаменный распев, гусли, варган); аутентичные приговорки, хороводы и колядки; SFX для действий и окружения.</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">18</span>
+        <h4>Производительность и интеграции</h4>
+        <p>Стабильные 60 FPS на средне-бюджетных устройствах. Интеграции: RuStore (авторизация, платежи), рекламные сети, платёжные шлюзы, гиперссылки на Яндекс Телемост.</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">19</span>
+        <h4>Нефункциональные требования</h4>
+        <p>Надёжность (отсутствие критических багов, сохранение прогресса и Книги Заветов); безопасность (защита платёжных данных); удобство использования (интуитивный интерфейс, адаптация под сенсорное управление); педагогическая эффективность (скрытое обучение, культурный код, гражданская идентичность).</p>
+      </article>
+
+      <article class="spec reveal">
+        <span class="spec-num">20</span>
+        <h4>Архитектура и документация</h4>
+        <p>Клиент: C# / C++ (Unity), локальное хранение Книги Заветов и прогресса. Сервер: данные пользователя, лидерборды, обработка платежей и валидация покупок. Документация: руководство пользователя, техническое описание архитектуры и API, политика конфиденциальности, релизные заметки.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ПУТЬ ============ -->
+<section id="path">
+  <div class="container">
+    <div class="section-head reveal">
+      <h2 class="section-title">Путь мудрости</h2>
+      <div class="ornament">◆</div>
+      <p class="section-sub">Главная механика игры строится на трёх шагах. Каждая забава — метафора, а каждый завет — награда.</p>
+    </div>
+
+    <div class="path">
+      <div class="step reveal">
+        <div class="step-num">I</div>
+        <h3>Жизненная задача</h3>
+        <p>Князь, старейшины или жители села приходят с проблемой: спор, беда, искушение.</p>
+      </div>
+      <div class="step-arrow reveal">→</div>
+      <div class="step reveal">
+        <div class="step-num">II</div>
+        <h3>Игра</h3>
+        <p>Чтобы найти решение, герой проходит древнюю забаву — она метафорически разрешает ситуацию.</p>
+      </div>
+      <div class="step-arrow reveal">→</div>
+      <div class="step reveal">
+        <div class="step-num">III</div>
+        <h3>Мудрость</h3>
+        <p>Игрок усваивает завет из исторических источников, и он «впечатывается» в Книгу Заветов.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ГЛАВЫ ============ -->
+<section id="chapters">
+  <div class="container">
+    <div class="section-head reveal">
+      <h2 class="section-title">Три главы — три инициации</h2>
+      <div class="ornament">◆</div>
+      <p class="section-sub">Три уровня сложности, в игре именуемые «Главами». Каждая сочетает механическую основу с нарративно-метафорическим слоем.</p>
+    </div>
+
+    <!-- Глава 1 -->
+    <article class="chapter ch1 reveal">
+      <div class="chapter-num">I</div>
+      <div class="chapter-body">
+        <div class="chapter-head">
+          <h3>«Горелки»</h3>
+          <span class="tag">Инициация Души</span>
+        </div>
+        <p class="chapter-sub">Устроение дома и Братство</p>
+
+        <div class="meta">
+          <div class="meta-row">
+            <span class="lbl">Нарративная проблема</span>
+            <p>Борьба с леностью, суетой, усобицами и поиск истины.</p>
+          </div>
+          <div class="meta-row">
+            <span class="lbl">Механика</span>
+            <p>Герой бегает по кругу, уворачиваясь от «воды» (тьмы и соблазнов). Цель — не быть пойманным в течение заданного времени.</p>
+          </div>
+          <div class="meta-row">
+            <span class="lbl">Метафора</span>
+            <p>«Вода» — это тьма и жадность. Уклонение требует предельного терпения <em>(отсылка к «Бирюлькам»)</em> и проницательности, чтобы «вычислить» честного <em>(«Колечко»)</em>. В финале срабатывает обрядовая суть «Горелок»: нужно не просто убежать, а воссоединить разделённые тьмой пары, произнеся заклинание надежды.</p>
+          </div>
+        </div>
+
+        <blockquote>«В дому своем не ленитесь, но за всем смотрите…»<cite>Поучение Владимира Мономаха</cite></blockquote>
+      </div>
+    </article>
+
+    <!-- Глава 2 -->
+    <article class="chapter ch2 reveal">
+      <div class="chapter-num">II</div>
+      <div class="chapter-body">
+        <div class="chapter-head">
+          <h3>«Лапта»</h3>
+          <span class="tag">Инициация Закона</span>
+        </div>
+        <p class="chapter-sub">Правда и Милосердие</p>
+
+        <div class="meta">
+          <div class="meta-row">
+            <span class="lbl">Нарративная проблема</span>
+            <p>Кровная вражда, алчность, необходимость защиты слабых и справедливого суда.</p>
+          </div>
+          <div class="meta-row">
+            <span class="lbl">Механика</span>
+            <p>Игрок отбивает битой «восковой мяч» (тап по времени), затем быстро бежит на другую сторону поля и возвращается, пока мяч не пойман. Цель — набрать максимум успешных пробежек.</p>
+          </div>
+          <div class="meta-row">
+            <span class="lbl">Метафора</span>
+            <p>«Восковой мяч» — это справедливый закон и аргумент <em>(«Городки»)</em>, который нужно метко направить, чтобы восстановить границы, не разрушив общину. Автобег символизирует заботу о народе: успей «заслонить гусят» от Коршуна (алчности) и раздать ресурсы <em>(«Коляда»)</em>, пока стражи жадности не перехватили инициативу.</p>
+          </div>
+        </div>
+
+        <blockquote>«Всего же более убогих не забывайте…»<cite>Переход от кровной мести к вирам · Русская Правда · Поучение В. Мономаха</cite></blockquote>
+      </div>
+    </article>
+
+    <!-- Глава 3 -->
+    <article class="chapter ch3 reveal">
+      <div class="chapter-num">III</div>
+      <div class="chapter-body">
+        <div class="chapter-head">
+          <h3>«Медвежья потеха»</h3>
+          <span class="tag">Инициация Духа</span>
+        </div>
+        <p class="chapter-sub">Слово и Мудрость</p>
+
+        <div class="meta">
+          <div class="meta-row">
+            <span class="lbl">Нарративная проблема</span>
+            <p>Иноземная гордыня, духовная тьма, искушение властью и силой.</p>
+          </div>
+          <div class="meta-row">
+            <span class="lbl">Механика</span>
+            <p>Файтинг или стелс-уровень — в зависимости от пола персонажа.</p>
+          </div>
+          <div class="meta-row">
+            <span class="lbl">Метафора</span>
+            <p>Медведь — воплощение стихии, гордыни и тёмных сил. <em>Для молодца:</em> бой — дипломатический и духовный поединок <em>(«Шахматы», загадки)</em>, где удары и блоки суть аргументы веры и закона. Финальная анимация объятий — акт высшей мудрости: победа не через уничтожение, а через прощение и укрощение гордыни любовью. <em>Для девицы:</em> стелс — преодоление хитрости; игрок незаметно подкрадывается к стражам алчности и невежества, разгадывая словесные загадки, чтобы освободить свет и провести его к семье.</p>
+          </div>
+        </div>
+
+        <blockquote>«Не в худой и неведомой земле владычествовали…»<cite>Слово о Законе и Благодати · Доказательство духовного превосходства</cite></blockquote>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ============ КНИГА ЗАВЕТОВ ============ -->
+<section id="book">
+  <div class="container">
+    <div class="section-head reveal">
+      <h2 class="section-title">Книга Заветов</h2>
+      <div class="ornament">◆</div>
+      <p class="section-sub">Интерфейс в виде древнего фолианта и берестяного свитка, куда каллиграфическим почерком впечатываются цитаты, усвоенные после прохождения Глав.</p>
+    </div>
+
+    <div class="parchment reveal">
+      <h3>Словарь Мудрости</h3>
+      <p class="p-note">Записи, что остаются с тобой</p>
+
+      <div class="quote-list">
+        <p class="quote">«В дому своем не ленитесь, но за всем смотрите…»<small>Поучение Владимира Мономаха</small></p>
+        <div class="quote-sep"></div>
+        <p class="quote">«Всего же более убогих не забывайте…»<small>Поучение Владимира Мономаха</small></p>
+        <div class="quote-sep"></div>
+        <p class="quote">«Не в худой и неведомой земле владычествовали…»<small>Слово о Законе и Благодати</small></p>
+      </div>
+
+      <div class="book-features">
+        <div class="book-feature">
+          <h4>Стилизация под фолиант</h4>
+          <p>Старинная книга с застёжками, берестяные страницы, каллиграфия.</p>
+        </div>
+        <div class="book-feature">
+          <h4>Сохранение прогресса</h4>
+          <p>Заветы и достижения не теряются между сессиями.</p>
+        </div>
+        <div class="book-feature">
+          <h4>Скрытое обучение</h4>
+          <p>Никаких нотаций: жадность ведёт к потере, честность — к победе.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ГЕРОЙ ============ -->
+<section id="hero">
+  <div class="container">
+    <div class="section-head reveal">
+      <h2 class="section-title">Твой герой — отрок-советник</h2>
+      <div class="ornament">◆</div>
+      <p class="section-sub">Выбор пола, настройка внешности и одежда из «сундука». Путь к мудрости — свой у каждого.</p>
+    </div>
+
+    <div class="duo">
+      <div class="duo-card reveal">
+        <div class="duo-rune">☀</div>
+        <h4>Добрый молодец</h4>
+        <p>Файтинг · Шахматы и загадки · Победа через прощение</p>
+      </div>
+      <div class="duo-card reveal">
+        <div class="duo-rune">☾</div>
+        <h4>Красна девица</h4>
+        <p>Стелс · Словесные загадки · Освобождение света</p>
+      </div>
+    </div>
+
+    <div class="two-col" style="margin-top:56px">
+      <div class="reveal">
+        <h3 style="font-family:'Ruslan Display',serif;font-size:1.6rem;color:var(--gold-l);margin-bottom:6px">Создание персонажа</h3>
+        <ul class="feature-list">
+          <li><span>Выбор пола: <b>добрый молодец</b> или <b>красна девица</b></span></li>
+          <li><span>Настройка внешности: <b>телосложение, причёска, одежда</b> из «сундука»</span></li>
+          <li><span>Экран ввода имени и email — <b>бонус 1000 монет</b> за подтверждение</span></li>
+          <li><span>Цель через нарратив от Бога: пройти <b>3 ступени инициации</b>, обрести мудрость, пару и спасти мир от тьмы</span></li>
+        </ul>
+      </div>
+
+      <div class="card reveal" style="padding:36px 30px">
+        <div class="ornament" style="margin:0 0 20px">◆</div>
+        <h4 style="font-family:'Ruslan Display',serif;font-size:1.2rem;color:var(--gold-l);margin-bottom:14px">Интерфейс</h4>
+        <ul class="feature-list" style="margin-top:0">
+          <li><span>Экран выбора персонажа</span></li>
+          <li><span>Меню кастомизации</span></li>
+          <li><span>Игровые HUD-элементы</span></li>
+          <li><span>«Книга Заветов» — словарь мудрости</span></li>
+          <li><span>Послемиссионные опросы</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ЭПОС ============ -->
+<section id="epos">
+  <div class="container">
+    <div class="parchment reveal">
+      <h3>Вводный эпос</h3>
+      <p class="p-note">С чего начинается сказ</p>
+      <div class="epos">
+        <span>А и было то в те далёкие времена,</span>
+        <span>Когда меж Явью и Навью ходили тёмные силы.</span>
+        <span>На землю кривду наводили, народ в уныние вводили,</span>
+        <span>Солнце ясное за тучи прятали.</span>
+        <span>Пошёл тогда молодец, не по чину, а по сердцу,</span>
+        <span>Не мечом-палашом, а смекалкой да сноровкой.</span>
+        <span>Где городки разобьёт — там тень испуганная отступит,</span>
+        <span>Где в лапту сыграет — там свет прибавится.</span>
+        <span>На его пути — и Баба-Яга с хитрыми загадками,</span>
+        <span>и Леший, что с пути свести норовит,</span>
+        <span>и сама Морена, зиме госпожа, испытывать его станет.</span>
+        <span class="hl">Сможет ли он — добрый молодец?..</span>
+        <span class="hl">Сможет ли она — красна девица?..</span>
+        <span>Три Великие Забавы пройти, да мир от тьмы уберечь?</span>
+        <span class="last">Об этом сказ мой дальний пойдёт… Играючи.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ МОНЕТИЗАЦИЯ ============ -->
+<section id="money">
+  <div class="container money">
+    <div class="section-head reveal">
+      <h2 class="section-title">Монетизация и партнёрам</h2>
+      <div class="ornament">◆</div>
+      <p class="section-sub">Честные модели дохода, не ломающие погружение в мир Древней Руси.</p>
+    </div>
+
+    <div class="grid-3">
+      <article class="card reveal">
+        <div class="icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v9M9.5 10h5M9.5 14h5"/>
+          </svg>
+        </div>
+        <h3>Внутриигровая экономика</h3>
+        <ul>
+          <li>Внутриигровая валюта</li>
+          <li>Донаты</li>
+          <li>Премиум-подписка</li>
+        </ul>
+      </article>
+
+      <article class="card reveal">
+        <div class="icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="m10 10.5 5 1.5-5 1.5v-3Z"/>
+          </svg>
+        </div>
+        <h3>Реклама</h3>
+        <ul>
+          <li>Показ видео-рекламы</li>
+          <li>Вознаграждение за просмотр</li>
+        </ul>
+      </article>
+
+      <article class="card reveal">
+        <div class="icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19V7.5C4 6.1 5.1 5 6.5 5H20v12H6.5C5.1 17 4 18.1 4 19.5Z"/><path d="M20 17v3H6.5"/>
+          </svg>
+        </div>
+        <h3>Партнёрские предложения</h3>
+        <ul>
+          <li>Консультации историков</li>
+          <li>Образовательные курсы</li>
+          <li>Компьютерные клубы и партнёрские программы</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ФИНАЛЬНЫЙ CTA ============ -->
+<section id="start">
+  <div class="container">
+    <div class="final reveal">
+      <h2>Сможешь ли ты пройти<br>три великие забавы?</h2>
+      <p>Уберечь мир от тьмы, собрать Книгу Заветов и обрести мудрость — играючи.</p>
+      <div class="cta">
+        <a href="#" class="btn btn-primary">Скачать в RuStore</a>
+        <a href="#chapters" class="btn btn-ghost">Изучить главы</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ПОДДЕРЖКА / ПАРТНЁРЫ ============ -->
+<section id="support">
+  <div class="container">
+    <div class="support-card reveal">
+      <p class="support-label">Проект реализован при поддержке</p>
+
+      <div class="partners">
+        <!-- Фонд содействия инновациям -->
+        <a class="partner" href="https://fasie.ru" target="_blank" rel="noopener" title="Фонд содействия инновациям">
+          <img src="fond.svg" alt="Фонд содействия инновациям" class="logo-fond" loading="lazy">
+        </a>
+
+        <!-- Платформа университетского технологического предпринимательства -->
+        <a class="partner" href="https://univertechpred.ru" target="_blank" rel="noopener" title="Платформа университетского технологического предпринимательства">
+          <img src="platform.svg" alt="Платформа университетского технологического предпринимательства" loading="lazy">
+        </a>
+      </div>
+
+      <p class="support-text">Проект реализован при поддержке Фонда содействия инновациям в рамках программы «Студенческий стартап» мероприятия «Платформа университетского технологического предпринимательства» федерального проекта «Технологии»</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ФУТЕР ============ -->
+<footer>
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <a href="#top" class="logo">Заветы и забавы</a>
+      <p>Сюжетная 2D-игра о древнерусских забавах. Популяризация историко-культурного наследия Древней Руси через игровые механизмы.</p>
+    </div>
+
+    <div class="foot-links">
+      <div class="foot-col">
+        <h5>Игра</h5>
+        <ul>
+          <li><a href="#about">О игре</a></li>
+          <li><a href="#spec">Сведения о видеоигре</a></li>
+          <li><a href="#chapters">Три главы</a></li>
+          <li><a href="#book">Книга Заветов</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h5>Документы</h5>
+        <ul>
+          <li><a href="#">Руководство пользователя</a></li>
+          <li><a href="#">Политика конфиденциальности</a></li>
+          <li><a href="#">Условия использования</a></li>
+          <li><a href="#">Релизные заметки</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h5>Платформы</h5>
+        <ul>
+          <li><a href="#">RuStore</a></li>
+          <li><a href="#">Яндекс Телемост</a></li>
+          <li><a href="#">Android 8.0+</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot-bottom">
+    <span>© Заветы и забавы. Все права защищены.</span>
+    <span>Сделано с любовью к Древней Руси ◆</span>
+  </div>
+</footer>
+
+<script>
+/* ---------- прогресс-бар ---------- */
+const bar = document.getElementById('bar');
+const nav = document.getElementById('nav');
+function onScroll(){
+  const h = document.documentElement;
+  const max = h.scrollHeight - h.clientHeight;
+  const p = max > 0 ? (h.scrollTop / max) : 0;
+  bar.style.width = (p * 100) + '%';
+  nav.classList.toggle('scrolled', h.scrollTop > 40);
+}
+window.addEventListener('scroll', onScroll, {passive:true});
+onScroll();
+
+/* ---------- появление при скролле ---------- */
+const io = new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
+    if (entry.isIntersecting) {
+      entry.target.style.transitionDelay = (i * 70) + 'ms';
+      entry.target.classList.add('visible');
+      io.unobserve(entry.target);
+    }
+  });
+}, {threshold: 0.12, rootMargin: '0px 0px -60px 0px'});
+
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* ---------- плавный скролл с учётом фиксированного меню ---------- */
+document.querySelectorAll('a[href^="#"]').forEach(link => {
+  link.addEventListener('click', (e) => {
+    const id = link.getAttribute('href');
+    if (id === '#' || id.length < 2) return;
+    const target = document.querySelector(id);
+    if (!target) return;
+    e.preventDefault();
+    const y = target.getBoundingClientRect().top + window.pageYOffset - 70;
+    window.scrollTo({top: y, behavior: 'smooth'});
+  });
+});
+</script>
+</body>
+</html>
